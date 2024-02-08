@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      header {
+        position: relative;
+        background-color: skyblue;
+      }
+
+      #go-main {
+        font-size: 2em;
+        color: black;
+        margin-left: 30px;
+      }
+
+      .search {
+        position: absolute;
+        right: 0px;
+        bottom: 10px;
+      }
+
+      #search-input {
+        margin-right: 50px;
+      }
+
+      #editor {
+        width: 100%;
+        height: 500px;
+        resize: none;
+        font-size: large;
+      }
+    </style>
+    <title><%= title %> - Wiki</title>
+  </head>
+  <body>
+    <header>
+      <a href="/" id="go-main">Wiki</a>
+      <input type="text" class="search" id="search-input" />
+      <input type="button" value="검색" class="search" onclick="search()" />
+    </header>
+
+    <h1 style="display: inline"><%= title %> - 편집</h1>
+    <a href="/w/<%= title %>">이전</a>
+    <textarea id="editor"><%= content %></textarea>
+    <div style="position: relative">
+      <input
+        type="button"
+        value="저장"
+        style="font-size: large; position: absolute; right: 5px"
+        onclick="edit()"
+      />
+      <input
+        type="text"
+        placeholder="편집 요약"
+        style="font-size: large; position: absolute; left: 5px; width: 35%"
+        id="summary"
+      />
+    </div>
+  </body>
+  <script>
+    const searchInput = document.getElementById("search-input");
+
+    function search() {
+      location.href = "/s/search?q=" + searchInput.value;
+    }
+
+    const editor = document.getElementById("editor");
+    const summary = document.getElementById("summary");
+    function edit() {
+      const replaced = editor.value
+        .split("\n")
+        .map((content) => {
+          return "'" + content + "'";
+        })
+        .join(" || CHAR(10) || ");
+
+      if ("<%= method %>" === "edit") {
+        location.href = `/s/edit/commit?title=<%= title %>&q=${replaced}&sum=${summary.value}`;
+      }
+      if ("<%= method %>" === "create") {
+        location.href = `/s/edit/create?title=<%= title %>&q=${replaced}&sum=${summary.value}`;
+      }
+    }
+  </script>
+</html>
