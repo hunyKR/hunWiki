@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      header {
+        position: relative;
+        background-color: skyblue;
+      }
+
+      #go-main {
+        font-size: 2em;
+        color: black;
+        margin-left: 30px;
+      }
+
+      .search {
+        position: absolute;
+        right: 0px;
+        bottom: 10px;
+      }
+
+      #search-input {
+        margin-right: 50px;
+      }
+
+      .content {
+        white-space: pre-line;
+      }
+    </style>
+    <title>Wiki</title>
+  </head>
+  <body>
+    <header>
+      <a href="/" id="go-main">Wiki</a>
+      <input type="text" class="search" id="search-input" />
+      <input type="button" value="검색" class="search" onclick="search()" />
+    </header>
+
+    <span style="margin: 0 5px 0 10px"
+      >찾는 문서가 없나요? 문서로 바로 갈 수 있습니다.</span
+    ><a href="/w/<%= q %>" style="color: orange">'<%= q %>' 문서로 가기</a>
+    <% data.forEach((v) => { %>
+    <fieldset style="margin-top: 10px">
+      <a href="/w/<%= v.title %>" style="font-size: 2em; color: black"
+        ><%= v.title %></a
+      >
+      <div><%= v.content %></div>
+    </fieldset>
+    <% }); %>
+  </body>
+  <script>
+    const searchInput = document.getElementById("search-input");
+
+    function search() {
+      location.href = "/s/search?q=" + searchInput.value;
+    }
+  </script>
+</html>
