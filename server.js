@@ -4,11 +4,6 @@ const sqlite3 = require("sqlite3");
 const db = new sqlite3.Database("./database/db");
 app.set("view engine", "ejs");
 
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).send("서버 오류");
-});
-
 app.get("/", (req, res) => {
   res.redirect("/w/대문");
 });
@@ -68,7 +63,7 @@ app.get("/w/edit/:title", (req, res) => {
 });
 
 app.get("/s/edit/commit/", (req, res) => {
-  if (req.query.title === "대문") {
+  if (req.query.title === "대문" && !req.ip === "127.0.0.1") {
     res.send(
       `<script>alert('보호된 문서라 편집할 수 없습니다.'); location.href = '/w/${req.query.title}'</script>`
     );
@@ -97,9 +92,26 @@ app.get("/s/edit/commit/", (req, res) => {
 app.get("/s/edit/create/", (req, res) => {
   db.all(`INSERT INTO documents VALUES ('${req.query.title}', ${req.query.q})`);
   db.all(
-    `INSERT INTO history VALUES (1, '${req.query.title}', '${new Date()}', '${
-      req.ip
-    }', 'create', '${req.query.sum}', ${req.query.q})`
+    `SELECT * FROM history WHERE target='${req.query.title}'`,
+    (err, data) => {
+      if (data.reverse()[0]?.rev) {
+        db.all(
+          `INSERT INTO history VALUES (${data[0].rev + 1}, '${
+            req.query.title
+          }', '${new Date()}', '${req.ip}', 'create', '${req.query.sum}', ${
+            req.query.q
+          })`
+        );
+      } else {
+        db.all(
+          `INSERT INTO history VALUES (1, '${
+            req.query.title
+          }', '${new Date()}', '${req.ip}', 'create', '${req.query.sum}', ${
+            req.query.q
+          })`
+        );
+      }
+    }
   );
   res.send(
     `<script>alert('편집했습니다.'); location.href = '/w/${req.query.title}'</script>`
@@ -162,7 +174,7 @@ app.get("/s/edit/rec-rev", (req, res) => {
 });
 
 app.get("/s/delete/:title", (req, res) => {
-  if (req.params.title === "대문") {
+  if (req.query.title === "대문" && !req.ip === "127.0.0.1") {
     res.send(
       `<script>alert('보호된 문서라 삭제할 수 없습니다.'); location.href = '/w/${req.params.title}'</script>`
     );
@@ -174,6 +186,7 @@ app.get("/s/delete/:title", (req, res) => {
     db.all(
       `SELECT * FROM history WHERE target='${req.params.title}'`,
       (err, data) => {
+        console.log(data);
         db.all(
           `INSERT INTO history VALUES (${data.reverse()[0].rev + 1}, '${
             req.params.title
