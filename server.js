@@ -203,7 +203,7 @@ app.get("/s/delete/:title", (req, res) => {
       title,
     ]);
     handleDocumentDeletion(res, title);
-    db.all(`SELECT * FROM history WHERE target='${title}'`, (err, data) => {
+    db.all(`SELECT * FROM history WHERE target=?`,[title], (err, data) => {
       const latestRev = data.reverse()[0]?.rev + 1 || 1;
       const currentDate = new Date();
       db.all(
