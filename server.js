@@ -97,7 +97,7 @@ app.get("/s/edit/create/", (req, res) => {
   });
 
   res.send(
-    `<script>alert('편집했습니다.'); location.href = '/w/${title}'</script>`
+    `<script>alert('편집했습니다.'); location.href = '/w/${escape(title)}'</script>`
   );
 });
 
