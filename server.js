@@ -1,9 +1,16 @@
 const express = require("express");
 const sqlite3 = require("sqlite3");
+const escape = require('escape-html');
 const app = express();
 const db = new sqlite3.Database("./database/db");
-
 app.set("view engine", "ejs");
+
+const RateLimit = require('express-rate-limit');
+const limiter = RateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+});
+app.use(limiter);
 
 const renderView = (res, template, data) => {
   res.render(__dirname + template, data);
@@ -21,7 +28,7 @@ const handleProtectedDocument = (res, title) => {
 
 const handleDocumentDeletion = (res, title) => {
   res.send(
-    `<script>alert('문서를 삭제했습니다.'); location.href = '/w/${title}'</script>`
+    `<script>alert('문서를 삭제했습니다.'); location.href = '/w/${escape(title)}'</script>`
   );
 };
 
@@ -72,7 +79,7 @@ app.get("/s/edit/commit/", (req, res) => {
       );
     });
     res.send(
-      `<script>alert('편집했습니다.'); location.href = '/w/${title}'</script>`
+      `<script>alert('편집했습니다.'); location.href = '/w/${escape(title)}'</script>`
     );
   }
 });
@@ -149,7 +156,7 @@ app.get("/s/edit/rec-rev", (req, res) => {
   );
 
   res.send(
-    `<script>alert('선택하신 리비전으로 복구했습니다.'); location.href = '/w/${title}'</script>`
+    `<script>alert('선택하신 리비전으로 복구했습니다.'); location.href = '/w/${escape(title)}'</script>`
   );
 });
 
