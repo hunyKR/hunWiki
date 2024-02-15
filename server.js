@@ -1,11 +1,11 @@
 const express = require("express");
 const sqlite3 = require("sqlite3");
-const escape = require('escape-html');
+const escape = require("escape-html");
 const app = express();
 const db = new sqlite3.Database("./database/db");
 app.set("view engine", "ejs");
 
-const RateLimit = require('express-rate-limit');
+const RateLimit = require("express-rate-limit");
 const limiter = RateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
@@ -28,7 +28,9 @@ const handleProtectedDocument = (res, title) => {
 
 const handleDocumentDeletion = (res, title) => {
   res.send(
-    `<script>alert('문서를 삭제했습니다.'); location.href = '/w/${escape(title)}'</script>`
+    `<script>alert('문서를 삭제했습니다.'); location.href = '/w/${escape(
+      title
+    )}'</script>`
   );
 };
 
@@ -37,15 +39,15 @@ app.get("/", (req, res) => {
 });
 
 app.get("/s/search", (req, res) => {
-  const queryString = `SELECT * FROM documents WHERE title LIKE '%${req.query.q}%' OR content LIKE '%${req.query.q}%';`;
-  db.all(queryString, (err, data) => {
+  const queryString = `SELECT * FROM documents WHERE title LIKE ? OR content LIKE ?;`;
+  db.all(queryString, [`%${req.query.q}%`, `%${req.query.q}%`], (err, data) => {
     renderView(res, "/interface/search", { data, q: req.query.q });
   });
 });
 
 app.get("/w/:title", (req, res) => {
-  const queryString = `SELECT * FROM documents WHERE title='${req.params.title}'`;
-  db.all(queryString, (err, data) => {
+  const queryString = `SELECT * FROM documents WHERE title=?`;
+  db.all(queryString, [req.params.title], (err, data) => {
     const title = data[0]?.title || req.params.title;
     const content = data[0]?.content || "문서가 없습니다.";
     const editText = data[0]?.title ? "편집" : "생성";
@@ -54,8 +56,8 @@ app.get("/w/:title", (req, res) => {
 });
 
 app.get("/w/edit/:title", (req, res) => {
-  const queryString = `SELECT * FROM documents WHERE title='${req.params.title}'`;
-  db.all(queryString, (err, data) => {
+  const queryString = `SELECT * FROM documents WHERE title=?`;
+  db.all(queryString, [req.params.title], (err, data) => {
     const title = data[0]?.title || req.params.title;
     const content = data[0]?.content || "";
     const method = data[0]?.title ? "edit" : "create";
@@ -65,45 +67,59 @@ app.get("/w/edit/:title", (req, res) => {
 
 app.get("/s/edit/commit/", (req, res) => {
   const title = req.query.title;
-  const queryString = `UPDATE documents SET content=${req.query.q} WHERE title='${title}'`;
+  const queryString = `UPDATE documents SET content=${req.query.q} WHERE title=?`;
 
   if (title === "대문" && req.ip !== "127.0.0.1") {
     handleProtectedDocument(res, title);
   } else {
-    db.all(queryString);
-    db.all(`SELECT * FROM history WHERE target='${title}'`, (err, data) => {
+    db.all(queryString, [title]);
+    db.all(`SELECT * FROM history WHERE target=?`, [title], (err, data) => {
       const latestRev = data.reverse()[0]?.rev + 1 || 1;
       const currentDate = new Date();
-      db.all(
-        `INSERT INTO history VALUES (${latestRev}, '${title}', '${currentDate}', '${req.ip}', 'edit', '${req.query.sum}', ${req.query.q})`
-      );
+      db.all(`INSERT INTO history VALUES (?, ?, ?, ?, ?, ?, ${req.query.q})`, [
+        latestRev,
+        title,
+        String(currentDate),
+        req.ip,
+        "edit",
+        req.query.sum,
+      ]);
     });
     res.send(
-      `<script>alert('편집했습니다.'); location.href = '/w/${escape(title)}'</script>`
+      `<script>alert('편집했습니다.'); location.href = '/w/${escape(
+        title
+      )}'</script>`
     );
   }
 });
 
 app.get("/s/edit/create/", (req, res) => {
   const title = req.query.title;
-  db.all(`INSERT INTO documents VALUES ('${title}', ${req.query.q})`);
+  db.all(`INSERT INTO documents VALUES (?, ${req.query.q})`, [title]);
 
-  db.all(`SELECT * FROM history WHERE target='${title}'`, (err, data) => {
+  db.all(`SELECT * FROM history WHERE target=?`, [title], (err, data) => {
     const latestRev = data.reverse()[0]?.rev + 1 || 1;
     const currentDate = new Date();
-    db.all(
-      `INSERT INTO history VALUES (${latestRev}, '${title}', '${currentDate}', '${req.ip}', 'create', '${req.query.sum}', ${req.query.q})`
-    );
+    db.all(`INSERT INTO history VALUES (?, ?, ?, ?, ?, ?, ${req.query.q})`, [
+      latestRev,
+      title,
+      String(currentDate),
+      req.ip,
+      "create",
+      req.query.sum,
+    ]);
   });
 
   res.send(
-    `<script>alert('편집했습니다.'); location.href = '/w/${escape(title)}'</script>`
+    `<script>alert('편집했습니다.'); location.href = '/w/${escape(
+      title
+    )}'</script>`
   );
 });
 
 app.get("/w/history/:title", (req, res) => {
-  const queryString = `SELECT * FROM history WHERE target='${req.params.title}'`;
-  db.all(queryString, (err, data) => {
+  const queryString = `SELECT * FROM history WHERE target=?`;
+  db.all(queryString, [req.params.title], (err, data) => {
     renderView(res, "/interface/history", {
       title: req.params.title,
       data: data.reverse(),
@@ -120,8 +136,8 @@ app.get("/w/legacy/:title", (req, res) => {
     return;
   }
 
-  const queryString = `SELECT * FROM history WHERE target='${title}' AND rev=${rev};`;
-  db.all(queryString, (err, data) => {
+  const queryString = `SELECT * FROM history WHERE target=? AND rev=?;`;
+  db.all(queryString, [title, rev], (err, data) => {
     const content = data[0]?.content || "";
     renderView(res, "/interface/view", {
       title,
@@ -135,29 +151,46 @@ app.get("/s/edit/rec-rev", (req, res) => {
   const title = req.query.title;
   const rev = req.query.q;
 
-  db.all(
-    `SELECT * FROM history WHERE target='${title}' AND rev=${rev}`,
-    (err, data) => {
-      const content = data[0]?.content || "";
-      db.all(
-        `UPDATE documents SET content='${content}' WHERE title='${title}'`
-      );
-      db.all(
-        `SELECT * FROM history WHERE target='${title}'`,
-        (err, historyData) => {
-          const latestRev = historyData.reverse()[0]?.rev + 1 || 1;
-          const currentDate = new Date();
-          db.all(
-            `INSERT INTO history VALUES (${latestRev}, '${title}', '${currentDate}', '${req.ip}', 'recover to r${rev}', '${req.query.sum}', '${content}')`
-          );
-        }
-      );
-    }
-  );
+  if (title === "대문" && req.ip !== "127.0.0.1") {
+    handleProtectedDocument(res, title);
+  } else {
+    db.all(
+      `SELECT * FROM history WHERE target=? AND rev=?`,
+      [title, rev],
+      (err, data) => {
+        const content = data[0]?.content || "";
+        db.all(`UPDATE documents SET content=? WHERE title=?`, [
+          content,
+          title,
+        ]);
+        db.all(
+          `SELECT * FROM history WHERE target=?`,
+          [title],
+          (err, historyData) => {
+            const latestRev = historyData.reverse()[0]?.rev + 1 || 1;
+            const currentDate = new Date();
+            db.all(
+              `INSERT INTO history VALUES (?, ?, ?, ?, ?, ?, '${content}')`,
+              [
+                latestRev,
+                title,
+                String(currentDate),
+                req.ip,
+                `recover to r${rev}`,
+                req.query.sum,
+              ]
+            );
+          }
+        );
+      }
+    );
 
-  res.send(
-    `<script>alert('선택하신 리비전으로 복구했습니다.'); location.href = '/w/${escape(title)}'</script>`
-  );
+    res.send(
+      `<script>alert('선택하신 리비전으로 복구했습니다.'); location.href = '/w/${escape(
+        title
+      )}'</script>`
+    );
+  }
 });
 
 app.get("/s/delete/:title", (req, res) => {
@@ -166,15 +199,16 @@ app.get("/s/delete/:title", (req, res) => {
   if (title === "대문" && req.ip !== "127.0.0.1") {
     handleProtectedDocument(res, title);
   } else {
-    db.all(
-      `UPDATE documents SET content='문서가 없습니다' WHERE title='${title}'`
-    );
+    db.all(`UPDATE documents SET content='문서가 없습니다' WHERE title=?`, [
+      title,
+    ]);
     handleDocumentDeletion(res, title);
     db.all(`SELECT * FROM history WHERE target='${title}'`, (err, data) => {
       const latestRev = data.reverse()[0]?.rev + 1 || 1;
       const currentDate = new Date();
       db.all(
-        `INSERT INTO history VALUES (${latestRev}, '${title}', '${currentDate}', '${req.ip}', 'delete', '${req.query.sum}', '<i>deleted document</i>')`
+        `INSERT INTO history VALUES (?, ?, ?, ?, ?, ?, '<i>deleted document</i>')`,
+        [latestRev, title, String(currentDate), req.ip, "delete", req.query.sum]
       );
     });
   }
