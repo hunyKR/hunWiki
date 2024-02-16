@@ -46,10 +46,9 @@
     </div>
   </body>
   <script>
-    const searchInput = document.getElementById("search-input");
-
+    const searchInput = $("#search-input");
     function search() {
-      location.href = "/s/search?q=" + searchInput.value;
+      location.href = "/s/search?q=" + encodeURIComponent(searchInput.val());
     }
   </script>
 </html>
