@@ -67,22 +67,23 @@ app.get("/w/edit/:title", (req, res) => {
 
 app.get("/s/edit/commit/", (req, res) => {
   const title = req.query.title;
-  const queryString = `UPDATE documents SET content=${req.query.q} WHERE title=?`;
+  const queryString = `UPDATE documents SET content=? WHERE title=?`;
 
   if (title === "대문" && req.ip !== "127.0.0.1") {
     handleProtectedDocument(res, title);
   } else {
-    db.all(queryString, [title]);
+    db.all(queryString, [req.query.q, title]);
     db.all(`SELECT * FROM history WHERE target=?`, [title], (err, data) => {
       const latestRev = data.reverse()[0]?.rev + 1 || 1;
       const currentDate = new Date();
-      db.all(`INSERT INTO history VALUES (?, ?, ?, ?, ?, ?, ${req.query.q})`, [
+      db.all(`INSERT INTO history VALUES (?, ?, ?, ?, ?, ?, ?)`, [
         latestRev,
         title,
         String(currentDate),
         req.ip,
         "edit",
         req.query.sum,
+        req.query.q,
       ]);
     });
     res.send(
@@ -95,18 +96,19 @@ app.get("/s/edit/commit/", (req, res) => {
 
 app.get("/s/edit/create/", (req, res) => {
   const title = req.query.title;
-  db.all(`INSERT INTO documents VALUES (?, ${req.query.q})`, [title]);
+  db.all(`INSERT INTO documents VALUES (?, ?)`, [title, req.query.q]);
 
   db.all(`SELECT * FROM history WHERE target=?`, [title], (err, data) => {
     const latestRev = data.reverse()[0]?.rev + 1 || 1;
     const currentDate = new Date();
-    db.all(`INSERT INTO history VALUES (?, ?, ?, ?, ?, ?, ${req.query.q})`, [
+    db.all(`INSERT INTO history VALUES (?, ?, ?, ?, ?, ?, ?)`, [
       latestRev,
       title,
       String(currentDate),
       req.ip,
       "create",
       req.query.sum,
+      req.query.q,
     ]);
   });
 
@@ -203,7 +205,7 @@ app.get("/s/delete/:title", (req, res) => {
       title,
     ]);
     handleDocumentDeletion(res, title);
-    db.all(`SELECT * FROM history WHERE target=?`,[title], (err, data) => {
+    db.all(`SELECT * FROM history WHERE target=?`, [title], (err, data) => {
       const latestRev = data.reverse()[0]?.rev + 1 || 1;
       const currentDate = new Date();
       db.all(
