@@ -52,9 +52,16 @@
     </div>
     <% }) %>
   </body>
+
   <script>
+    const searchInput = document.getElementById("search-input");
     function search() {
-      location.href = "/s/search?q=" + $("#search-input").val();
+      searchInput.value = searchInput.value.replaceAll("<", "&lt;");
+      searchInput.value = searchInput.value.replaceAll(">", "&gt;");
+      searchInput.value = searchInput.value.replaceAll("\\(", "&#40;");
+      searchInput.value = searchInput.value.replaceAll("\\)", "&#41;");
+      searchInput.value = searchInput.value.replaceAll("'", "&#x27;");
+      location.href = "/s/search?q=" + searchInput.value.value;
     }
   </script>
 </html>
