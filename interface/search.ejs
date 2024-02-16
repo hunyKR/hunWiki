@@ -51,10 +51,8 @@
     <% }); %>
   </body>
   <script>
-    const searchInput = document.getElementById("search-input");
-
     function search() {
-      location.href = "/s/search?q=" + searchInput.value;
+      location.href = "/s/search?q=" + $("#search-input").val();
     }
   </script>
 </html>

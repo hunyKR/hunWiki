@@ -60,14 +60,12 @@
     </div>
   </body>
   <script>
-    const searchInput = document.getElementById("search-input");
-
     function search() {
-      location.href = "/s/search?q=" + searchInput.value;
+      location.href = "/s/search?q=" + $("#search-input").val();
     }
 
-    const editor = document.getElementById("editor");
-    const summary = document.getElementById("summary");
+    const editor = $('#editor').val();
+    const summaryVal = $('#summary').val();
     function edit() {
       const replaced = editor.value
         .split("\n")
@@ -77,10 +75,10 @@
         .join("");
 
       if ("<%= method %>" === "edit") {
-        location.href = `/s/edit/commit?title=<%= title %>&q=${replaced}&sum=${summary.value}`;
+        location.href = `/s/edit/commit?title=<%= title %>&q=${replaced}&sum=${summaryVal}`;
       }
       if ("<%= method %>" === "create") {
-        location.href = `/s/edit/create?title=<%= title %>&q=${replaced}&sum=${summary.value}`;
+        location.href = `/s/edit/create?title=<%= title %>&q=${replaced}&sum=${summaryVal}`;
       }
     }
   </script>
