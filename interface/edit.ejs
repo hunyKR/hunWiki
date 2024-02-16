@@ -59,37 +59,28 @@
       />
     </div>
   </body>
+  <script src="
+  https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js
+  "></script>
   <script>
-    const searchInput = document.getElementById("search-input");
+    const searchInput = $("#search-input");
     function search() {
-      searchInput.value = searchInput.value.replaceAll("<", "&lt;");
-      searchInput.value = searchInput.value.replaceAll(">", "&gt;");
-      searchInput.value = searchInput.value.replaceAll("\\(", "&#40;");
-      searchInput.value = searchInput.value.replaceAll("\\)", "&#41;");
-      searchInput.value = searchInput.value.replaceAll("'", "&#x27;");
-      location.href = "/s/search?q=" + searchInput.value.value;
+      location.href = "/s/search?q=" + encodeURIComponent(searchInput.val());
     }
 
     function edit() {
-      const editor = document.getElementById("editor");
-      const summary = document.getElementById("summary");
-      summary.value = summary.value.replaceAll("<", "&lt;");
-      summary.value = summary.value.replaceAll(">", "&gt;");
-      summary.value = summary.value.replaceAll("\\(", "&#40;");
-      summary.value = summary.value.replaceAll("\\)", "&#41;");
-      summary.value = summary.value.replaceAll("'", "&#x27;");
-      const replaced = editor.value
-        .split("\n")
-        .map((content) => {
-          return content + "%0A";
-        })
-        .join("");
+      const editor = $("#editor");
+      const summary = $("#summary");
 
       if ("<%= method %>" === "edit") {
-        location.href = `/s/edit/commit?title=<%= title %>&q=${replaced}&sum=${summary.value}`;
+        location.href = `/s/edit/commit?title=<%= title %>&q=${encodeURIComponent(editor.val())}&sum=${encodeURIComponent(
+          summary.val()
+        )}`;
       }
       if ("<%= method %>" === "create") {
-        location.href = `/s/edit/create?title=<%= title %>&q=${replaced}&sum=${summary.value}`;
+        location.href = `/s/edit/create?title=<%= title %>&q=${encodeURIComponent(editor.val())}&sum=${encodeURIComponent(
+          summary.val()
+        )}`;
       }
     }
   </script>
