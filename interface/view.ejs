@@ -35,7 +35,7 @@
     <header>
       <a href="/" id="go-main">Wiki</a>
       <input type="text" class="search" id="search-input" />
-      <input type="button" searchInput.value="검색" class="search" onclick="search()" />
+      <input type="button" value="검색" class="search" onclick="search()" />
     </header>
 
     <h1 style="display: inline"><%= title %></h1>
@@ -47,15 +47,13 @@
     >
     <div class="content"><%- content %></div>
   </body>
+  <script src="
+  https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js
+  "></script>
   <script>
-    const searchInput = document.getElementById('search-input')
+    const searchInput = $("#search-input");
     function search() {
-      searchInput.value = searchInput.value.replaceAll("<", "&lt;");
-      searchInput.value = searchInput.value.replaceAll(">", "&gt;");
-      searchInput.value = searchInput.value.replaceAll("\\(", "&#40;");
-      searchInput.value = searchInput.value.replaceAll("\\)", "&#41;");
-      searchInput.value = searchInput.value.replaceAll("'", "&#x27;");
-      location.href = "/s/search?q=" + searchInput.value.value;
+      location.href = "/s/search?q=" + encodeURIComponent(searchInput.val());
     }
   </script>
 </html>
