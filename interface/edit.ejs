@@ -72,9 +72,9 @@
       const replaced = editor.value
         .split("\n")
         .map((content) => {
-          return "'" + content + "'";
+          return content + "%0A";
         })
-        .join(" || CHAR(10) || ");
+        .join("");
 
       if ("<%= method %>" === "edit") {
         location.href = `/s/edit/commit?title=<%= title %>&q=${replaced}&sum=${summary.value}`;
