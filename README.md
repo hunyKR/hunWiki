@@ -25,4 +25,4 @@ hunWiki는 node.js 기반 위키 엔진입니다.
 
 Q : 위키 헤더에 뜨는 위키이름(Wiki)를 수정하고 싶습니다.
 
-> A : /wiki-settings.json 파일의 `wikiname` 프로퍼티를 수정하세요.
+> A : `/wiki-settings.json` 파일의 `wikiname` 프로퍼티를 수정하세요.
