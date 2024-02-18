@@ -29,11 +29,11 @@
         white-space: pre-line;
       }
     </style>
-    <title><%= title %> - Wiki</title>
+    <title><%= title %> - <%= wikiname %></title>
   </head>
   <body>
     <header>
-      <a href="/" id="go-main">Wiki</a>
+      <a href="/" id="go-main"><%= wikiname %></a>
       <input type="text" class="search" id="search-input" />
       <input type="button" value="검색" class="search" onclick="search()" />
     </header>

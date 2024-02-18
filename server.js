@@ -4,6 +4,8 @@ const escape = require("escape-html");
 const app = express();
 const db = new sqlite3.Database("./database/db");
 app.set("view engine", "ejs");
+const file = require("fs");
+const settings = JSON.parse(file.readFileSync("./wiki-settings.json", "utf-8"));
 
 const RateLimit = require("express-rate-limit");
 const limiter = RateLimit({
@@ -17,7 +19,7 @@ const renderView = (res, template, data) => {
 };
 
 const handleNotFound = (req, res) => {
-  res.status(404).sendFile(__dirname + "/interface/not-found.html");
+  renderView(res, "/interface/not-found", { wikiname: settings.wikiname });
 };
 
 const handleProtectedDocument = (res, title) => {
@@ -41,7 +43,11 @@ app.get("/", (req, res) => {
 app.get("/s/search", (req, res) => {
   const queryString = `SELECT * FROM documents WHERE title LIKE ? OR content LIKE ?;`;
   db.all(queryString, [`%${req.query.q}%`, `%${req.query.q}%`], (err, data) => {
-    renderView(res, "/interface/search", { data, q: req.query.q });
+    renderView(res, "/interface/search", {
+      data,
+      q: req.query.q,
+      wikiname: settings.wikiname,
+    });
   });
 });
 
@@ -51,7 +57,12 @@ app.get("/w/:title", (req, res) => {
     const title = data[0]?.title || req.params.title;
     const content = data[0]?.content || "문서가 없습니다.";
     const editText = data[0]?.title ? "편집" : "생성";
-    renderView(res, "/interface/view", { title, content, editText });
+    renderView(res, "/interface/view", {
+      title,
+      content,
+      editText,
+      wikiname: settings.wikiname,
+    });
   });
 });
 
@@ -61,7 +72,12 @@ app.get("/w/edit/:title", (req, res) => {
     const title = data[0]?.title || req.params.title;
     const content = data[0]?.content || "";
     const method = data[0]?.title ? "edit" : "create";
-    renderView(res, "/interface/edit", { title, content, method });
+    renderView(res, "/interface/edit", {
+      title,
+      content,
+      method,
+      wikiname: settings.wikiname,
+    });
   });
 });
 
@@ -125,6 +141,7 @@ app.get("/w/history/:title", (req, res) => {
     renderView(res, "/interface/history", {
       title: req.params.title,
       data: data.reverse(),
+      wikiname: settings.wikiname,
     });
   });
 });
@@ -134,7 +151,11 @@ app.get("/w/legacy/:title", (req, res) => {
   const rev = req.query.q;
 
   if (!title || !Number(rev)) {
-    res.status(500).send("잘못된 요청입니다.");
+    res
+      .status(500)
+      .send(
+        "<script>alert('잘못된 요청입니다.'); location.href = '/'</script>"
+      );
     return;
   }
 
@@ -145,6 +166,7 @@ app.get("/w/legacy/:title", (req, res) => {
       title,
       editText: "편집",
       content: `<div style="padding: 10px; text-align: center; background-color: orange;">[주의!] 문서의 이전 버전(r${rev} 판)을 보고 있습니다. <a href="/w/${title}">최신 버전으로 이동</a></div>${content}`,
+      wikiname: settings.wikiname,
     });
   });
 });
