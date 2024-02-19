@@ -82,13 +82,51 @@ app.get("/w/edit/:title", (req, res) => {
 });
 
 app.get("/s/edit/commit/", (req, res) => {
-  const title = req.query.title;
-  const queryString = `UPDATE documents SET content=? WHERE title=?`;
-
-  if (title === "대문" && req.ip !== "127.0.0.1") {
-    handleProtectedDocument(res, title);
+  if (settings.banlist.includes(req.ip)) {
+    res.send(
+      "<script>alert('차단된 IP입니다.'); location.href = '/' </script>"
+    );
+    return;
   } else {
-    db.all(queryString, [req.query.q, title]);
+    const title = req.query.title;
+    const queryString = `UPDATE documents SET content=? WHERE title=?`;
+
+    if (title === "대문" && req.ip !== "127.0.0.1") {
+      handleProtectedDocument(res, title);
+    } else {
+      db.all(queryString, [req.query.q, title]);
+      db.all(`SELECT * FROM history WHERE target=?`, [title], (err, data) => {
+        const latestRev = data.reverse()[0]?.rev + 1 || 1;
+        const currentDate = new Date();
+        db.all(`INSERT INTO history VALUES (?, ?, ?, ?, ?, ?, ?)`, [
+          latestRev,
+          title,
+          String(currentDate),
+          req.ip,
+          "edit",
+          req.query.sum,
+          req.query.q,
+        ]);
+      });
+      res.send(
+        `<script>alert('편집했습니다.'); location.href = '/w/${escape(
+          title
+        )}'</script>`
+      );
+    }
+  }
+});
+
+app.get("/s/edit/create/", (req, res) => {
+  if (settings.banlist.includes(req.ip)) {
+    res.send(
+      "<script>alert('차단된 IP입니다.'); location.href = '/' </script>"
+    );
+    return;
+  } else {
+    const title = req.query.title;
+    db.all(`INSERT INTO documents VALUES (?, ?)`, [title, req.query.q]);
+
     db.all(`SELECT * FROM history WHERE target=?`, [title], (err, data) => {
       const latestRev = data.reverse()[0]?.rev + 1 || 1;
       const currentDate = new Date();
@@ -97,42 +135,18 @@ app.get("/s/edit/commit/", (req, res) => {
         title,
         String(currentDate),
         req.ip,
-        "edit",
+        "create",
         req.query.sum,
         req.query.q,
       ]);
     });
+
     res.send(
       `<script>alert('편집했습니다.'); location.href = '/w/${escape(
         title
       )}'</script>`
     );
   }
-});
-
-app.get("/s/edit/create/", (req, res) => {
-  const title = req.query.title;
-  db.all(`INSERT INTO documents VALUES (?, ?)`, [title, req.query.q]);
-
-  db.all(`SELECT * FROM history WHERE target=?`, [title], (err, data) => {
-    const latestRev = data.reverse()[0]?.rev + 1 || 1;
-    const currentDate = new Date();
-    db.all(`INSERT INTO history VALUES (?, ?, ?, ?, ?, ?, ?)`, [
-      latestRev,
-      title,
-      String(currentDate),
-      req.ip,
-      "create",
-      req.query.sum,
-      req.query.q,
-    ]);
-  });
-
-  res.send(
-    `<script>alert('편집했습니다.'); location.href = '/w/${escape(
-      title
-    )}'</script>`
-  );
 });
 
 app.get("/w/history/:title", (req, res) => {
@@ -172,69 +186,90 @@ app.get("/w/legacy/:title", (req, res) => {
 });
 
 app.get("/s/edit/rec-rev", (req, res) => {
-  const title = req.query.title;
-  const rev = req.query.q;
-
-  if (title === "대문" && req.ip !== "127.0.0.1") {
-    handleProtectedDocument(res, title);
-  } else {
-    db.all(
-      `SELECT * FROM history WHERE target=? AND rev=?`,
-      [title, rev],
-      (err, data) => {
-        const content = data[0]?.content || "";
-        db.all(`UPDATE documents SET content=? WHERE title=?`, [
-          content,
-          title,
-        ]);
-        db.all(
-          `SELECT * FROM history WHERE target=?`,
-          [title],
-          (err, historyData) => {
-            const latestRev = historyData.reverse()[0]?.rev + 1 || 1;
-            const currentDate = new Date();
-            db.all(
-              `INSERT INTO history VALUES (?, ?, ?, ?, ?, ?, '${content}')`,
-              [
-                latestRev,
-                title,
-                String(currentDate),
-                req.ip,
-                `recover to r${rev}`,
-                req.query.sum,
-              ]
-            );
-          }
-        );
-      }
-    );
-
+  if (settings.banlist.includes(req.ip)) {
     res.send(
-      `<script>alert('선택하신 리비전으로 복구했습니다.'); location.href = '/w/${escape(
-        title
-      )}'</script>`
+      "<script>alert('차단된 IP입니다.'); location.href = '/' </script>"
     );
+    return;
+  } else {
+    const title = req.query.title;
+    const rev = req.query.q;
+
+    if (title === "대문" && req.ip !== "127.0.0.1") {
+      handleProtectedDocument(res, title);
+    } else {
+      db.all(
+        `SELECT * FROM history WHERE target=? AND rev=?`,
+        [title, rev],
+        (err, data) => {
+          const content = data[0]?.content || "";
+          db.all(`UPDATE documents SET content=? WHERE title=?`, [
+            content,
+            title,
+          ]);
+          db.all(
+            `SELECT * FROM history WHERE target=?`,
+            [title],
+            (err, historyData) => {
+              const latestRev = historyData.reverse()[0]?.rev + 1 || 1;
+              const currentDate = new Date();
+              db.all(
+                `INSERT INTO history VALUES (?, ?, ?, ?, ?, ?, '${content}')`,
+                [
+                  latestRev,
+                  title,
+                  String(currentDate),
+                  req.ip,
+                  `recover to r${rev}`,
+                  req.query.sum,
+                ]
+              );
+            }
+          );
+        }
+      );
+
+      res.send(
+        `<script>alert('선택하신 리비전으로 복구했습니다.'); location.href = '/w/${escape(
+          title
+        )}'</script>`
+      );
+    }
   }
 });
 
 app.get("/s/delete/:title", (req, res) => {
-  const title = req.params.title;
-
-  if (title === "대문" && req.ip !== "127.0.0.1") {
-    handleProtectedDocument(res, title);
+  if (settings.banlist.includes(req.ip)) {
+    res.send(
+      "<script>alert('차단된 IP입니다.'); location.href = '/' </script>"
+    );
+    return;
   } else {
-    db.all(`UPDATE documents SET content='문서가 없습니다' WHERE title=?`, [
-      title,
-    ]);
-    handleDocumentDeletion(res, title);
-    db.all(`SELECT * FROM history WHERE target=?`, [title], (err, data) => {
-      const latestRev = data.reverse()[0]?.rev + 1 || 1;
-      const currentDate = new Date();
-      db.all(
-        `INSERT INTO history VALUES (?, ?, ?, ?, ?, ?, '<i>deleted document</i>')`,
-        [latestRev, title, String(currentDate), req.ip, "delete", req.query.sum]
-      );
-    });
+    const title = req.params.title;
+
+    if (title === "대문" && req.ip !== "127.0.0.1") {
+      handleProtectedDocument(res, title);
+    } else {
+      db.all(`UPDATE documents SET content='문서가 없습니다' WHERE title=?`, [
+        title,
+      ]);
+      handleDocumentDeletion(res, title);
+      db.all(`SELECT * FROM history WHERE target=?`, [title], (err, data) => {
+        const latestRev = data.reverse()[0]?.rev + 1 || 1;
+        const currentDate = new Date();
+        db.all(
+          `INSERT INTO history VALUES (?, ?, ?, ?, ?, ?, '<i>deleted document</i>')`,
+          [
+            latestRev,
+            title,
+            String(currentDate),
+            req.ip,
+            "delete",
+            req.query.sum,
+          ]
+        );
+      });
+    }
   }
 });
 
